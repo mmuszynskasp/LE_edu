@@ -5,6 +5,7 @@ library(tidyverse)
 library(dplyr)
 library(eurostat)
 
+######IMPORTANT! files from van raalte include life expectancy conditional on survival to 35, marked as ".van"
 
 data.dir <- "C:\\Users\\Magdalena\\demography\\education\\data\\LE"
 data.out <- "C:\\Users\\Magdalena\\demography\\education\\data\\ready"
@@ -91,7 +92,7 @@ popall2 <- read.table(file="popedu2mid.csv", sep=",", header=TRUE)
 popall912 <- read.table(file="popedu2mid91.csv", sep=",", header=TRUE)
 popspain <- read.table(file="spain.csv", sep=",", header=TRUE)
 popdenmark <- read.table(file="denmarkpop0910.csv", sep=",",header=TRUE)
-popaustralia <- read.table(file="australia11.csv", sep=",",header=TRUE)
+popaustralia <-read.table(file="australia11.csv", sep=",",header=TRUE)
 
 popall <- popall %>%
   mutate(age=recode(age,"From 25 to 29 years"="25-29", "From 30 to 34 years"="30-34","From 35 to 39 years"="35-39",
@@ -182,8 +183,8 @@ czechia <- vanraalte %>%
             by=c("sex","edu")) %>%
   mutate(LEprev=as.numeric(LE)*as.numeric(prev)) %>%
   group_by(year,sex,age) %>%
-  dplyr::summarise(LEnew=sum(LEprev)-35)%>%
-  mutate(age="35-39", country="Czechia", year="1999-2003")
+  dplyr::summarise(LEnew=sum(LEprev))%>%
+  mutate(age="35-39", country="Czechia.van", year="1999-2003")
   
 # Denmark & 2001-2005 &  30,50,65 & \citet{nemeth21} & 2001 & 30-34+  &  \citet{Eurostatcensus}\\
 # & 2011-2015 &  30,50,65  &\citet{nemeth21} &  2011 & 30-34+ & \citet{Eurostatcensus} \\
@@ -227,30 +228,9 @@ estonia <- vanraalte %>%
             by=c("sex","edu")) %>%
   mutate(LEprev=as.numeric(LE)*as.numeric(prev)) %>%
   group_by(year,sex,age) %>%
-  dplyr::summarise(LEnew=sum(LEprev)-35)%>%
-  mutate(age="35-39", country="Estonia", year="1988-2002")
+  dplyr::summarise(LEnew=sum(LEprev))%>%
+  mutate(age="35-39", country="Estonia.van", year="1988-2002")
 
-#France &  1991-1999 & 35 & \citet{vanraalte12} & 1991* & 35-39 & \citet{Eurostatcensus}  \\
-#& 2011 & 25 & \citet{murtin17} & 2011 & 25-29 & \citet{Eurostatcensus} \\    
-france2 <- murtinLE %>%
-  mutate(year=as.character(year), edu=as.character(edu))%>%
-  filter(country=="FRA") %>%
-  left_join(popall %>% filter(country=="France", age=="25-29", year==2011), 
-            by=c("sex","edu")) %>%
-  mutate(LEprev=as.numeric(LE)*as.numeric(prev)) %>%
-  group_by(sex) %>%
-  dplyr::summarise(year="2012",LEnew=sum(LEprev)) %>%
-  mutate(age="25-29", country="France")
-
-france <- vanraalte %>%
-  filter(country=="France") %>%
-  left_join(popall912 %>% filter(country=="France", age=="35-39", year==1991), 
-            by=c("sex","edu")) %>%
-  mutate(LEprev=as.numeric(LE)*as.numeric(prev)) %>%
-  group_by(year,sex,age) %>%
-  dplyr::summarise(LEnew=sum(LEprev)-35)%>%
-  mutate(age="35-39", country="France", year="1991-1999") %>%
-  bind_rows(france2)
 
 
 # finland &  1991-2000 & 35 & \citet{vanraalte12} & 1991, 2001 & 35-39 & \citet{Eurostatcensus}  \\
@@ -273,10 +253,8 @@ finland2 <- vanraalte %>%
   left_join(finlandpop2, by=c("sex","edu")) %>%
   mutate(LEprev=as.numeric(LE)*as.numeric(prev)) %>%
   group_by(sex) %>%
-  dplyr::summarise(LEnew=sum(LEprev)-35) %>%
-  mutate(year="1991-2001", age="35-39", country="Finland")
-
-
+  dplyr::summarise(LEnew=sum(LEprev)) %>%
+  mutate(year="1991-2001", age="35-39", country="Finland.van")
 
 #Finland & 2010 & 25 & \citet{murtin17} & 2011 & 25-29 & \citet{Eurostatcensus} \\
 finland <- murtinLE %>%
@@ -289,6 +267,40 @@ finland <- murtinLE %>%
   dplyr::summarise(LEnew=sum(LEprev))%>%
   mutate(year="2010", age="25-29", country="Finland") %>%
   bind_rows(finland2)
+
+
+#France &  1991-1999 & 35 & \citet{vanraalte12} & 1991,2001 & 35-39 & \citet{Eurostatcensus}  \\
+#& 2011 & 25 & \citet{murtin17} & 2011 & 25-29 & \citet{Eurostatcensus} \\    
+france2 <- murtinLE %>%
+  mutate(year=as.character(year), edu=as.character(edu))%>%
+  filter(country=="FRA") %>%
+  left_join(popall %>% filter(country=="France", age=="25-29", year==2011), 
+            by=c("sex","edu")) %>%
+  mutate(LEprev=as.numeric(LE)*as.numeric(prev)) %>%
+  group_by(sex) %>%
+  dplyr::summarise(year="2012",LEnew=sum(LEprev)) %>%
+  mutate(age="25-29", country="France")
+
+popfrance <- popall912 %>% 
+  filter(country=="France", age=="35-39", year==1991) %>%
+  left_join(popall2 %>% 
+              filter(country=="France", age=="35-39", year==2001) %>%
+              select(sex,edu,n), 
+            by=c("sex","edu")) %>%
+  mutate(n=n.x+n.y)
+
+france <- vanraalte %>%
+  filter(country=="France") %>%
+  left_join(popfrance %>% 
+              left_join(popfrance %>% group_by(sex) %>% dplyr::summarise(nall=sum(n)), by=c("sex")), 
+            by=c("sex","edu")) %>%
+  mutate(prev=n/nall)%>%
+  mutate(LEprev=as.numeric(LE)*as.numeric(prev)) %>%
+  group_by(year,sex,age) %>%
+  dplyr::summarise(LEnew=sum(LEprev))%>%
+  mutate(age="35-39", country="France.van", year="1991-1999") %>%
+  bind_rows(france2)
+
 
 # Israel & 2008 & 25 & \citet{murtin17} & 2008 & 25-29 &  \citet{IPUMS0322} \\
 israel <- murtinLE %>%
@@ -343,8 +355,8 @@ lithuania <- vanraalte %>%
             by=c("sex","edu")) %>%
   mutate(LEprev=as.numeric(LE)*as.numeric(prev)) %>%
   group_by(year,sex,age) %>%
-  dplyr::summarise(LEnew=sum(LEprev)-35) %>%
-  mutate(year="2001", age="35-39", country="Lithuania")
+  dplyr::summarise(LEnew=sum(LEprev)) %>%
+  mutate(year="2000-2002", age="35-39", country="Lithuania.van")
 
 
 # norway &  1991-2000 & 35 & \citet{vanraalte12} & 1991, 2001 & 35-39 & \citet{Eurostatcensus}  \\
@@ -367,8 +379,8 @@ norway2 <- vanraalte %>%
   left_join(norwaypop2, by=c("sex","edu")) %>%
   mutate(LEprev=as.numeric(LE)*as.numeric(prev)) %>%
   group_by(sex) %>%
-  dplyr::summarise(LEnew=sum(LEprev)-35) %>%
-  mutate(year="1991-2001", age="35-39", country="Norway")
+  dplyr::summarise(LEnew=sum(LEprev)) %>%
+  mutate(year="1991-2001", age="35-39", country="Norway.van")
 
 # Norway &  1991,2001,2011 & 25 & \citet{murtin17} & 1991, 2001,2011 & 25-29 & \citet{Eurostatcensus}  \\
 norway <- murtinLE %>%
@@ -389,8 +401,8 @@ poland <- vanraalte %>%
             by=c("sex","edu")) %>%
   mutate(LEprev=as.numeric(LE)*as.numeric(prev)) %>%
   group_by(year,sex,age) %>%
-  dplyr::summarise(LEnew=sum(LEprev)-35) %>%
-  mutate(year="2001", age="35-39", country="Poland")
+  dplyr::summarise(LEnew=sum(LEprev)) %>%
+  mutate(year="2001-2003", age="35-39", country="Poland.van")
 
 # Slovenia &  2011 & 25 & \citet{murtin17} & 2011 & 25-29 & \citet{Eurostatcensus}  \\
 slovenia <- murtinLE %>%
@@ -440,6 +452,7 @@ sweden0105 <-nemeth %>%
               mutate(edu=as.character(edu)), 
             by=c("sex","edu","age"))%>%
   mutate(LEprev=as.numeric(LE)*as.numeric(prev)) %>%
+  mutate(year=period) %>%
   group_by(year,sex,age) %>%
   dplyr::summarise(LEnew=sum(LEprev))
 # &  2011-2015 &  30+ & \citet{nemeth21}  &  2011 & 30-34+ & \citet{Eurostatcensus}\\
@@ -449,6 +462,7 @@ sweden1115 <-nemeth %>%
               mutate(edu=as.character(edu)), 
             by=c("sex","edu","age"))%>%
   mutate(LEprev=as.numeric(LE)*as.numeric(prev)) %>%
+  mutate(year=period) %>%
   group_by(year,sex,age) %>%
   dplyr::summarise(LEnew=sum(LEprev))
 
@@ -485,8 +499,8 @@ switzerland <- vanraalte %>%
   left_join(switzerlandpop2, by=c("sex","edu")) %>%
   mutate(LEprev=as.numeric(LE)*as.numeric(prev)) %>%
   group_by(sex) %>%
-  dplyr::summarise(LEnew=sum(LEprev)-35) %>%
-  mutate(year="1991-2001", age="35-39", country="Switzerland")
+  dplyr::summarise(LEnew=sum(LEprev)) %>%
+  mutate(year="1991-2001", age="35-39", country="Switzerland.van")
 
 
 #US & 1990, 2010 & 30,50,65 & \citet{luy19} & 1990,2010 & 30-34+ &   \citet{Eurostatcensus}  \\
