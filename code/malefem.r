@@ -30,3 +30,6 @@ mydata <- readHMDweb(CNTRY="DNK", item="fltper_1x1",username="mmuszynska@gmail.c
   mutate(totalnew=(femex*Fem_pop+memex*Male_pop)/(Fem_pop+Male_pop),
          gapex=totalnew-totalex)
 
+
+
+
