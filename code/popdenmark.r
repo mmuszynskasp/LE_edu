@@ -1,5 +1,4 @@
 #############################################################################################################################
-dev.off()
 rm(list=ls())
 library(tidyverse)
 library(dplyr)
@@ -11,48 +10,17 @@ library(forcats)
 library(directlabels)
 library(svglite)
 
-data.dir <- "C:\\Users\\Magdalena\\demography\\education\\code\\LE_edu\\data"
-data.out <- "C:\\Users\\Magdalena\\demography\\education\\data\\ready"
-pop.dir <- "C:\\Users\\Magdalena\\demography\\education\\code\\LE_edu\\data"
-
-################# LE by edu, LE_new
-setwd(data.dir)
-nemethall <- read.table(file="nemethall.txt", sep="\t", header=TRUE)
-
-####mode
-modetry <- nemethall %>%
-  group_by(Sex,Period,Education) %>%
-  dplyr::summarise(AgeGrp=AgeGrp,dx=dx, dxmax=max(dx)) %>%
-  filter(dx==dxmax)
-
+data.dir <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data"
+data.out <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data\\ready"
+pop.dir <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data"
 
 ###read-in population
 setwd(pop.dir)
+#2011-2015
 pop1115 <- read.table(file="denmark1115.csv", sep=";")[,-c(1,2)]
 colnames(pop1115) <- c("sex","edu","age","y2011","y2012","y2013","y2014","y2015")
 
-
-#share unknown
-unkn1115 <- pop1115 %>%
-  mutate(edu=substr(edu,1,2),
-         age=substr(age,1,2),
-         edu=recode(edu,"10"="Low","20"="Medium","25"="Medium","35"="Medium","35"="High","40"="High","50"="High","60"="High","65"="High"),
-         y1115=y2011+y2012+y2013+y2014+y2015) %>%
-  filter(edu==90) %>%
-  group_by(sex,age) %>%
-  summarize(y1115=sum(y1115)) %>%
-  left_join(all1115 <- pop1115 %>%
-              mutate(edu=substr(edu,1,2),
-                     age=substr(age,1,2),
-                     edu=recode(edu,"10"="Low","20"="Medium","25"="Medium","35"="Medium","35"="High","40"="High","50"="High","60"="High","65"="High"),
-                     y1115=y2011+y2012+y2013+y2014+y2015) %>%
-              filter(age>=30) %>%
-              group_by(sex,age) %>%
-              summarize(all1115=sum(y1115))) %>%
-  mutate(unknperc=100*y1115/all1115)
-
-#2011-2015
-pop1115 <- pop1115 %>%
+pop1115raw <- pop1115 %>%
   mutate(edu=substr(edu,1,2),
          age=substr(age,1,5),
          edu=recode(edu,"10"="Low","20"="Medium","25"="Medium","35"="Medium","35"="High","40"="High","50"="High","60"="High","65"="High"),
@@ -61,47 +29,11 @@ pop1115 <- pop1115 %>%
   group_by(sex,edu,age) %>%
   summarize(y1115=sum(y1115))
 
-
-
-
-pop1115all <- pop1115 %>%
-  group_by(sex,age) %>%
-  summarize(sum1115=sum(y1115))
-
-pop1115 <- pop1115 %>%
-  left_join(pop1115all) %>%
-  mutate(share=y1115/sum1115,
-         sex=recode(sex,"Men"="m","Women"="f"),
-         period="2011-2015") %>%
-  select(sex,edu,age,period,share)
-
-
-
 ##1991-1995
 pop9195 <- read.table(file="denmark9195.csv", sep=";")[,-c(1,2)]
 colnames(pop9195) <- c("sex","age","edu","y1991","y1992","y1993","y1994","y1995")
 
-#share unknown
-unkn9195 <- pop9195 %>%
-  mutate(edu=substr(edu,1,2),
-         age=substr(age,1,2),
-         edu=recode(edu,"10"="Low","20"="Medium","25"="Medium","35"="Medium","35"="High","40"="High","50"="High","60"="High","65"="High"),
-         y9195=y1991+y1992+y1993+y1994+y1995) %>%
-  filter(edu==90,age>=30) %>%
-  group_by(age,sex) %>%
-  summarize(y9195=sum(y9195)) %>%
-  left_join(all9195 <- pop9195 %>%
-              mutate(edu=substr(edu,1,2),
-                     age=substr(age,1,2),
-                     edu=recode(edu,"10"="Low","20"="Medium","25"="Medium","35"="Medium","35"="High","40"="High","50"="High","60"="High","65"="High"),
-                     y9195=y1991+y1992+y1993+y1994+y1995) %>%
-              group_by(age,sex) %>%
-              filter(age>=30) %>%
-              summarize(all9195=sum(y9195))) %>%
-  mutate(unknperc=100*y9195/all9195)
-####
-
-pop9195 <- pop9195 %>%
+pop9195raw <- pop9195 %>%
    mutate(edu=substr(edu,1,2),
          age=substr(age,1,5),
          edu=recode(edu,"10"="Low","20"="Medium","25"="Medium","35"="Medium","35"="High","40"="High","50"="High","60"="High","65"="High"),
@@ -110,34 +42,30 @@ pop9195 <- pop9195 %>%
   group_by(sex,edu,age) %>%
   summarize(y9195=sum(y9195)) 
 
-pop9195all <- pop9195 %>%
-  group_by(sex,age) %>%
-  summarize(sum9195=sum(y9195))
-
-
-
-popshare <- pop9195 %>%
-  filter(edu!=90) %>%
-  left_join(pop9195all) %>%
+####together both years and share at the life table threshold age
+popshare <- pop9195raw %>%  
+  left_join(pop9195raw %>%
+               group_by(sex,age) %>%
+               summarize(sum9195=sum(y9195))) %>%
   mutate(share=y9195/sum9195,
          sex=recode(sex,"Men"="m","Women"="f"),
          period="1991-1995") %>%
   select(sex,edu,age,period,share) %>%
-  bind_rows(pop1115) %>%
+  bind_rows(pop1115raw %>%
+              left_join(pop1115raw %>%
+                          group_by(sex,age) %>%
+                          summarize(sum1115=sum(y1115))) %>%
+              mutate(share=y1115/sum1115,
+                     sex=recode(sex,"Men"="m","Women"="f"),
+                     period="2011-2015") %>%
+              select(sex,edu,age,period,share)) %>%
   mutate(age2=substr(age,1,2)) %>%
-  filter(as.numeric(age2)>=30) 
+  filter(as.numeric(age2)==30)  
+#######################################################################################
+################# LE by edu, LE_new
+setwd(data.dir)
 
-
-#%>%group_by(sex,edu,period) %>%
-#  mutate(share=share[age2==30])
-
-
-ageall <- substr(unique(popshare$age),1,2)
-
-i=1
-ages <- ageall[i]
-
-educomp <- nemethall %>%
+educomp <- read.table(file="nemethall.txt", sep="\t", header=TRUE) %>%
   dplyr::select(Country,Period,Sex,Education,AgeGrp,lx,ex,dx) %>%
   mutate(edu=recode(Education, "Middle"="Medium"),
          Sex=recode(Sex, "Female"="f", "Male"="m"),
@@ -145,31 +73,12 @@ educomp <- nemethall %>%
   rename_with(tolower) %>%
   dplyr::rename(age=agegrp,LE=ex) %>%
   filter((period=="1991-1995"|period=="2011-2015"), country=="Denmark") %>%
-  right_join(popshare,by=c("sex","edu","age", "period"))%>%
-  group_by(period,sex,edu) %>%
-  summarize(agei=ages,age=age2,LEi=LE,lxi=lx,dxi=dx,pithr=share[i]) %>%
-  filter(age>=agei)
-write.table(educomp, file="educomp.csv",sep=",",row.names=FALSE)
+  right_join(popshare,by=c("sex","edu","period"))%>%
+  filter(age2>=30)
 
 
-for (i in 2:length(ageall)){
-  ages <- ageall[i]
-  educomp <- nemethall %>%
-    dplyr::select(Country,Period,Sex,Education,AgeGrp,lx,ex,dx) %>%
-    mutate(edu=recode(Education, "Middle"="Medium"),
-           Sex=recode(Sex, "Female"="f", "Male"="m"),
-           year=substr(Period,1,4)) %>%
-    rename_with(tolower) %>%
-    dplyr::rename(age=agegrp,LE=ex) %>%
-    filter((period=="1991-1995"|period=="2011-2015"), country=="Denmark") %>%
-    right_join(popshare,by=c("sex","edu","age", "period"))%>%
-    group_by(period,sex,edu) %>%
-    summarize(agei=ages,age=age2,LEi=LE,lxi=lx,dxi=dx,pithr=share[i]) %>%
-    filter(age>=agei)
- write.table(educomp, file="educomp.csv",sep=",",row.names=FALSE,col.names=FALSE, append=TRUE)
-}
-
-educomp <- read.table("educomp.csv",sep=",", header=TRUE)
+#write.table(educomp, file="educomp.csv",sep=",",row.names=FALSE)
+#educomp <- read.table("educomp.csv",sep=",", header=TRUE)
 
   
 sumsynth <- educomp %>%
@@ -179,7 +88,7 @@ sumsynth <- educomp %>%
 byedu <-educomp %>%
   left_join(sumsynth, by=c("sex","age","agei","period"))
 
-
+#######################################################################################################
 #############LE total from HMD
 newcountries <- c("Denmark")
 newHMDcou <- c("DNK")
@@ -266,11 +175,11 @@ DNK2 <- DNKall %>%
 
 #####################
 DNKSWEex <- DNK1 %>%
-  filter(age<=65) %>%
+#  filter(age<=65) %>%
   select(fem.ex, male.ex,age) %>%
   mutate(year=paste("1991","1995", sep="-")) %>%
   bind_rows(DNK2 %>%
-              filter(age<=65) %>%
+ #             filter(age<=65) %>%
               select(fem.ex, male.ex,age) %>%
               mutate(year=paste("2011","2015", sep="-")))
   
@@ -286,11 +195,7 @@ LEall <- DNKSWEex %>%
          type=recode(type,"LEnew"="New", "LE_total"="Total","LE_high"="High","LE_low"="Low","LE_medium"="Medium"),
          LEage =LE+age) %>%
   rename("Type"="type") %>%
-  filter(!is.na(LE), age<75) %>%
-  filter(agei==30)
-#  filter(age==agei)
-
-
+  filter(!is.na(LE)) 
 
 ########################################################plot as percentage of remaining e(x) for total (LE_total==1)
 LEperc <- LEall %>%
