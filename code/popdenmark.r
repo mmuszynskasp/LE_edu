@@ -87,6 +87,14 @@ byedu <-educomp %>%                                                #LE according
               summarize(LE_new=sum(sharenew*LE)/sum(sharenew)), 
             by=c("sex","age","period"))
 
+
+byedu2 <- byedu %>%
+  filter(age.x=="30-34") %>%
+  select(sex,period,education,LE) %>%
+  pivot_wider(names_from = education, values_from = LE) %>%
+  mutate(gapMH=High-Middle, gapML=Middle-Low)
+
+
 ############# read in LE total from HMD - need to be calculated since these years are not grouped together in HMD
 country <- "Denmark"
 countryname <- "DNK"
@@ -95,8 +103,8 @@ years1 <- c(1991,2011)
 years2 <- c(1995,2015)
 
 #read-in data
-DxHMD <- readHMDweb(CNTRY=countryname, item="Deaths_5x1")
-NxHMD <- readHMDweb(CNTRY=countryname, item="Exposures_5x1")
+DxHMD <- readHMDweb(CNTRY=countryname, item="Deaths_5x1")   #provide your username and password
+NxHMD <- readHMDweb(CNTRY=countryname, item="Exposures_5x1") #provide your username and password
 
 DNKall <- DxHMD %>%
   dplyr::select(Year,Age,Female,Male) %>%
@@ -110,8 +118,8 @@ DNKall <- DxHMD %>%
 
 
 ##### ax from 5x5 lt for 1985-94 and 2010-2014
-axfem <- readHMDweb(CNTRY=countryname, item="fltper_5x5")
-axmale <- readHMDweb(CNTRY=countryname, item="mltper_5x5")
+axfem <- readHMDweb(CNTRY=countryname, item="fltper_5x5") #provide your username and password
+axmale <- readHMDweb(CNTRY=countryname, item="mltper_5x5") #provide your username and password
 
 
 DNKax <- axfem %>%
@@ -218,7 +226,7 @@ plot1 <- ggarrange(ggplot(data=LEperc,aes(x=age, y=diff_total, group=Type))  +
                     strip.text.y = element_text(angle=0))+
             theme(legend.position="none")+
             scale_x_continuous(name="Age",limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+ 
-            scale_y_continuous(name="Years")+#, limits=c(-0.1,2), breaks=c(-0.1, seq(from=0, to=2, by=0.5)), labels=c(-0.1,seq(from=0, to=2, by=0.5)))+  
+            scale_y_continuous(name="Years")+
             geom_hline(yintercept=0, lty=2, col="grey")+
             ggtitle("Absolute Gap"),
       
@@ -229,17 +237,13 @@ plot1 <- ggarrange(ggplot(data=LEperc,aes(x=age, y=diff_total, group=Type))  +
             theme_minimal() +
             theme(legend.position="none")+
             scale_x_continuous(name="Age",limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+ 
-            #scale_y_continuous(name="Years", limits=c(-0.1,2), breaks=c(-0.1, seq(from=0, to=2, by=0.5)), labels=c(-0.1,seq(from=0, to=2, by=0.5)))+  
             scale_y_continuous(name="Percent")+
-            #theme(axis.title.y=element_blank())+
             theme(axis.title = element_text(size = 14),
                   axis.text = element_text(size = 12),
                   strip.text = element_text(size = 14),
                   strip.text.y = element_text(angle=0))+
             ggtitle("Relative Gap"),
-         #+ geom_hline(yintercept=0, lty=2, col="grey"),
           nrow=1,ncol=2)
-         #,common.legend = TRUE, legend="right", values=c(rep("black",2),rep("red",2)))
 setwd(figures.dir)
 ggsave(plot1, file="diffDen.pdf", width = 7, height = 3.5)
 
@@ -362,7 +366,6 @@ sexplot1 <- ggarrange(
    ggplot(data=sexdiff %>% filter(year=="2011-2015")  , aes(x=age, y=decopart, Group = Component,  color=Component)) +
      geom_line(size = 0.7)+
      scale_color_manual(values=c("red","blue","black")) +
- #    scale_linetype_manual(values=c(2,2,2))+
      theme_minimal() +
      theme(legend.position="none")+
      labs(x = "Age") +
@@ -381,7 +384,6 @@ sexplot2 <- ggarrange(
    ggplot(data=sexdiff %>% filter(year=="1991-1995")  , aes(x=age, y=partsrel, Group = Component, color=Component)) +
      geom_line(size = 0.7)+
      scale_color_manual(values=c("red","blue","black")) +
- #    scale_linetype_manual(values=c(2,2,2))+
      theme_minimal() +
      theme(legend.position="none")+
      labs(x = "Age") +
@@ -396,7 +398,6 @@ sexplot2 <- ggarrange(
    ggplot(data=sexdiff %>% filter(year=="2011-2015")  , aes(x=age, y=partsrel, Group = Component, color=Component)) +
      geom_line(size = 0.7)+
      scale_color_manual(values=c("red","blue","black")) +
-#     scale_linetype_manual(values=c(2,2,2))+
      theme_minimal() +
      theme(legend.position="none")+
      labs(x = "Age") +
