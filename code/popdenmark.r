@@ -67,7 +67,7 @@ popshare <- pop9195raw %>%
 ################# read in LE by edu, estimate share at each age of edu groups according to current risk conditions, LE_edu
 setwd(data.dir)
 
-educomp <- read.table(file="nemethall.txt", sep="\t", header=TRUE) %>% # read-in data on LE by edu
+educomp1 <- read.table(file="nemethall.txt", sep="\t", header=TRUE) %>% # read-in data on LE by edu
   dplyr::select(Country,Period,Sex,Education,AgeGrp,lx,ex,dx) %>%
   mutate(edu=recode(Education, "Middle"="Medium"),
          Sex=recode(Sex, "Female"="f", "Male"="m"),
@@ -80,19 +80,18 @@ educomp <- read.table(file="nemethall.txt", sep="\t", header=TRUE) %>% # read-in
   mutate(age=substr(age.x,1,2),
          sharenew=share*lx/100000)
 
+educomp <- educomp1 %>%
+  left_join(educomp1 %>%
+  group_by(period,sex,age) %>%
+  summarise(all=sum(sharenew)))%>%
+  mutate(sharenew=sharenew/all)
 
-byedu <-educomp %>%                                                #LE according to current edu composition
+
+byedu <-educomp %>%                                                #LE according to current edu composition, each age as threshold age
   left_join(educomp %>%
               group_by(period,sex,age) %>%
-              summarize(LE_new=sum(sharenew*LE)/sum(sharenew)), 
+              summarize(LE_new=sum(sharenew*LE)), 
             by=c("sex","age","period"))
-
-
-byedu2 <- byedu %>%
-  filter(age.x=="30-34") %>%
-  select(sex,period,education,LE) %>%
-  pivot_wider(names_from = education, values_from = LE) %>%
-  mutate(gapMH=High-Middle, gapML=Middle-Low)
 
 
 ############# read in LE total from HMD - need to be calculated since these years are not grouped together in HMD
@@ -257,7 +256,7 @@ LEdenplot <- LEall %>%
        geom_line(aes(linetype=Type, col=Type), size=0.7)+
        scale_linetype_manual(values=c(1,1,1,1,2))+
        scale_color_manual(values=c("#0F8B8D","#EC9A29","#A8201A", "black","black"))+
-       facet_grid(vars(sex),vars(period))+
+       facet_grid(vars(period),vars(sex))+
        theme_minimal() +
        scale_x_continuous(name="Age",limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+ 
        scale_y_continuous(name="Average Age at Death")+
@@ -272,7 +271,7 @@ ggsave(plot=LEdenplot, filename="LEden3.pdf",  width = 7.4, height = 7)
             
 
 ################ plot with the distribution of population by age and educational attainment, normal and according to current conditions
-redux <- popshare %>%
+shareplot <- popshare %>%
   mutate(agegr=age,
          age=substr(agegr,1,2),
          Observed=share) %>%
@@ -285,7 +284,7 @@ redux <- popshare %>%
          Type=paste(Type,edu,sep="_")) %>%
   ggplot(aes(x=age, y=prevb, group=Type, color = edu, linetype = variant)) +
   geom_line(size = 0.7)+
-  facet_grid(sex~period) +
+  facet_grid(period~sex) +
   scale_color_manual(values=c("#0F8B8D","#A8201A","#EC9A29")) +
   theme_minimal() +
   theme(legend.position="none")+
@@ -295,7 +294,7 @@ redux <- popshare %>%
         axis.text = element_text(size = 12),
         strip.text = element_text(size = 14),
         strip.text.y = element_text(angle=0))
-ggsave(plot=redux, filename="comp30new.pdf",  width = 7.5, height = 7)
+ggsave(plot=shareplot, filename="comp30new.pdf",  width = 7.5, height = 7)
 
 
 ############ decompose differences between LE_new

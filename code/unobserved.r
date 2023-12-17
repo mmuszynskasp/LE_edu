@@ -6,25 +6,24 @@ library(purrr)
 library(ggplot2)
 library(HMDHFDplus)
 library(devtools)
-#install_github("mpascariu/MortalityLaws")
 library(MortalityLaws)
 library(xtable)
 
-cohorts.out <- "C:\\Users\\Magdalena\\demography\\education\\data\\ready\\cohorts"
-periods.out <- "C:\\Users\\Magdalena\\demography\\education\\data\\ready\\periods"
-plots.out <- "C:\\Users\\Magdalena\\demography\\education\\figures"
+cohorts.out <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data\\ready\\DNK\\cohorts"
+periods.out <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data\\ready\\DNK\\periods"
+plots.out <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\figures"
 
 
 countryname <- "DNK"
 
 ####check out Denmark first
-Dx <- readHMDweb(CNTRY=countryname, item="Deaths_lexis", username="mmuszynska@gmail.com",password="123Mucha123!")
-Ex <- readHMDweb(CNTRY=countryname, item="Exposures_lexis", username="mmuszynska@gmail.com",password="123Mucha123!")
-flt <-   readHMDweb(CNTRY=countryname, item="fltper_1x1", username="mmuszynska@gmail.com",password="123Mucha123!")
-#mlt <-    readHMDweb(CNTRY=countryname, item="mltper_1x1", username="mmuszynska@gmail.com",password="123Mucha123!")
+Dx <- readHMDweb(CNTRY=countryname, item="Deaths_lexis") #, username="",password="")
+Ex <- readHMDweb(CNTRY=countryname, item="Exposures_lexis")#, username="",password="")
+flt <-   readHMDweb(CNTRY=countryname, item="fltper_1x1")#, username="",password="")
+
   
 ####################################################################################################
-########### females first
+########### females #########################################################################
 
 ##########cohort
 Dxc <- Dx %>%
@@ -119,7 +118,7 @@ for(i in 2:length(years)){
 }
 
 
-###############################  
+ 
 ####make the coefficient to multiply
 setwd(cohorts.out)  
 allcoh <- read.table(file="cohorts.csv", sep=",", header=TRUE)
@@ -141,7 +140,8 @@ check2 <- as_tibble(check) %>%
   arrange(as.numeric(age)) %>%
   filter(as.numeric(age)>=30)
 
-######################################################################################################################
+write.table(check2, file="femmultiplier.csv", sep=",", row.names=FALSE)
+
 ##################### LE 
 newdata <- check2 %>%
   mutate(age=as.numeric(age),
@@ -170,52 +170,46 @@ mylt <- function(mx,ax){
     Tx[i] <- sum(Lx[i:length(Lx)])
   }
   ex= Tx/lx
-  return(ex[1])
-}
+  return(ex[1])}
 
 new_mx <-  function(age,mx,sigma,rel_surv){
   new_mx <- mx*(rel_surv)^sigma
-#  new_mx <- ifelse(age==30,mx,new_mx)
   new_mx <- ifelse(age==110,1,new_mx)
-  return(as.vector(new_mx))
-}
+  return(as.vector(new_mx))}
 
 
 LEdata <- newdata %>%
-#    add_row(flt %>%
-#            filter(Age==109, Year %in%years ) %>%
-#            mutate(age=as.numeric(Age),
-#                   year=as.numeric(Year),
-#                   rel_surv=1,
-#                   ax=ifelse(Age==108,ex,ax))%>%
-#              select(age,ax,year,mx)) %>%
-  mutate(new_mx_3=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=0.3),
-         new_mx_7=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=0.7),
-         new_mx_15=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=1.5)) %>%
+  mutate(new_mx_06=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=1/0.6),
+         new_mx_2=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=1/2),
+         new_mx_4=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=1/4),
+         new_mx_8=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=1/8)) %>%
   arrange(as.numeric(age)) %>%
   filter(year>=1991) %>%
   group_by(year) %>%
   summarize(ex=mylt(mx=mx,ax=ax),
-            new_ex_3=mylt(mx=new_mx_3,ax=ax),
-            new_ex_7=mylt(mx=new_mx_7,ax=ax),
-            new_ex_15=mylt(mx=new_mx_15,ax=ax)) 
+            new_ex_06=mylt(mx=new_mx_06,ax=ax),
+            new_ex_2=mylt(mx=new_mx_2,ax=ax),
+            new_ex_4=mylt(mx=new_mx_4,ax=ax),
+            new_ex_8=mylt(mx=new_mx_8,ax=ax)) 
 
 femgap <- LEdata %>%
-  mutate(gap3=ex-new_ex_3,
-         gap7=ex-new_ex_7,
-         gap15=ex-new_ex_15) %>%
-  tidyr::pivot_longer(cols=gap3:gap15,names_to="Type",values_to="gap") %>%
-  mutate(sigma=ifelse(Type=="gap3","0.3","0.7"),
-         sigma=ifelse(Type=="gap15","1.5",sigma)) %>%
+  mutate(gap06=ex-new_ex_06,
+         gap2=ex-new_ex_2,
+         gap4=ex-new_ex_4,
+         gap8=ex-new_ex_8) %>%
+  tidyr::pivot_longer(cols=gap06:gap8,names_to="Type",values_to="gap") %>%
+  mutate(k=gsub('gap',"",x=Type),
+         k=ifelse(k=="06","0.6",k))%>%
   filter(year %in% c(1991:1995,2011:2015)) %>%
   mutate(yearag=ifelse(year %in% c(1991:1995), "1991-1995","2011-2015")) %>%
-  group_by(yearag, Type) %>%
+  group_by(yearag, k) %>%
   summarise(gap=mean(gap))
   
 
 
 ########################################################################################################################################################################################
-########### males
+########### males #################################################################################################################
+
 ##########cohort
 Dxc <- Dx %>%
   select(Year,Age,Cohort,Male) %>%
@@ -237,14 +231,7 @@ ltc <- mxc %>%
   group_by(Cohort) %>%
   group_map(~(LifeTable(x=as.numeric(.x$Age),mx=as.numeric(.x$mx)))$lt) 
 
-#ltc <- mx %>%
-#  filter(Cohort>=1800 & Cohort<=2020) %>%
-#  arrange(as.numeric(Age))%>%
-#  group_by(Cohort) %>%
-#  group_map(~(LifeTable(x=as.numeric(.x$Age),mx=as.numeric(.x$mx)))$lt) 
 
-#cohorts <- unique(mx$Cohort[mx$Cohort<=2000])
-#cohorts <- sort(unique(as.numeric(mx$Cohort)))
 cohorts <- 1870:2015
 
 setwd(cohorts.out)
@@ -309,7 +296,7 @@ for(i in 2:length(years)){
 }
 
 
-###############################  
+
 ####make the coefficient to multiply
 setwd(cohorts.out)  
 allcoh <- read.table(file="cohorts.csv", sep=",", header=TRUE)
@@ -323,7 +310,7 @@ mycoeff <- allcoh %>%
   mutate(ourcoeff=lx.y/lx.coh) 
 ####
 check <- tapply(X=mycoeff$ourcoeff, INDEX=list(age=mycoeff$x, year=mycoeff$year), FUN=sum)
-###plot
+
 check2 <- as_tibble(check) %>%
   mutate(age=rownames(check)) %>%
   tidyr::pivot_longer(cols=-age,names_to = "year", values_to = "rel_surv") %>%
@@ -331,7 +318,8 @@ check2 <- as_tibble(check) %>%
   arrange(as.numeric(age)) %>%
   filter(as.numeric(age)>=30)
 
-######################################################################################################################
+write.table(check2, file="malemultiplier.csv", sep=",", row.names=FALSE)
+
 ##################### LE 
 newdata <- check2 %>%
   mutate(age=as.numeric(age),
@@ -344,70 +332,42 @@ newdata <- check2 %>%
 years <- unique(newdata$year)
 
 
-mylt <- function(mx,ax){
-  px <- 1-mx/(2+(1-ax)*mx)
-  px[length(mx)] <- 0
-  lx <- matrix(100000,nrow=length(mx),ncol=1)
-  dx <- matrix(0,nrow=length(mx),ncol=1)
-  for (i in 2:length(lx)){
-    lx[i] <- lx[i-1]*px[i-1]
-    dx[i-1] <- lx[i-1]-lx[i]
-  }
-  Lx <- lx-(1-ax)*dx
-  Lx[length(Lx)] <- lx[length(Lx)]*ax[length(Lx)]
-  Tx <- matrix(0,nrow=length(mx),ncol=1)
-  for (i in 1:length(lx)){
-    Tx[i] <- sum(Lx[i:length(Lx)])
-  }
-  ex= Tx/lx
-  return(ex[1])
-}
-
-new_mx <-  function(age,mx,sigma,rel_surv){
-  new_mx <- mx*(rel_surv)^sigma
-  #  new_mx <- ifelse(age==30,mx,new_mx)
-  new_mx <- ifelse(age==110,1,new_mx)
-  return(as.vector(new_mx))
-}
-
-
 LEdata <- newdata %>%
-  #    add_row(flt %>%
-  #            filter(Age==109, Year %in%years ) %>%
-  #            mutate(age=as.numeric(Age),
-  #                   year=as.numeric(Year),
-  #                   rel_surv=1,
-  #                   ax=ifelse(Age==108,ex,ax))%>%
-  #              select(age,ax,year,mx)) %>%
-  mutate(new_mx_3=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=0.3),
-         new_mx_7=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=0.7),
-         new_mx_15=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=1.5)) %>%
+  mutate(new_mx_06=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=1/0.6),
+         new_mx_2=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=1/2),
+         new_mx_4=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=1/4),
+         new_mx_8=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=1/8)) %>%
   arrange(as.numeric(age)) %>%
   filter(year>=1991) %>%
   group_by(year) %>%
   summarize(ex=mylt(mx=mx,ax=ax),
-            new_ex_3=mylt(mx=new_mx_3,ax=ax),
-            new_ex_7=mylt(mx=new_mx_7,ax=ax),
-            new_ex_15=mylt(mx=new_mx_15,ax=ax)) 
+            new_ex_06=mylt(mx=new_mx_06,ax=ax),
+            new_ex_2=mylt(mx=new_mx_2,ax=ax),
+            new_ex_4=mylt(mx=new_mx_4,ax=ax),
+            new_ex_8=mylt(mx=new_mx_8,ax=ax)) 
 
 malegap <- LEdata %>%
-  mutate(gap3=ex-new_ex_3,
-         gap7=ex-new_ex_7,
-         gap15=ex-new_ex_15) %>%
-  tidyr::pivot_longer(cols=gap3:gap15,names_to="Type",values_to="gap") %>%
-  mutate(sigma=ifelse(Type=="gap3","0.3","0.7"),
-         sigma=ifelse(Type=="gap15","1.5",sigma)) %>%
+  mutate(gap06=ex-new_ex_06,
+         gap2=ex-new_ex_2,
+         gap4=ex-new_ex_4,
+         gap8=ex-new_ex_8) %>%
+  tidyr::pivot_longer(cols=gap06:gap8,names_to="Type",values_to="gap") %>%
+  mutate(k=gsub('gap',"",x=Type),
+         k=ifelse(k=="06","0.6",k))%>%
   filter(year %in% c(1991:1995,2011:2015)) %>%
   mutate(yearag=ifelse(year %in% c(1991:1995), "1991-1995","2011-2015")) %>%
-  group_by(yearag, Type) %>%
- summarise(gap=mean(gap))
+  group_by(yearag, k) %>%
+  summarise(gap=mean(gap))
 
+
+
+#########################################################################
+###both sexes LE gap
 bothgap <- femgap %>%
   rename(femgap=gap) %>%
   left_join(malegap %>%
               rename(malegap=gap)) %>%
-  mutate(Type=ifelse(Type=="gap15","hap15",Type)) %>%
-  arrange(yearag,Type)%>%
-  pivot_wider(names_from = Type, values_from = femgap:malegap)
+  arrange(yearag,k)%>%
+  pivot_wider(names_from = k, values_from = femgap:malegap)
 
-
+print(xtable(bothgap, digits=1), include.rownames = FALSE)
