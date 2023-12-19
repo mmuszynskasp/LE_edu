@@ -9,9 +9,9 @@ library(devtools)
 library(MortalityLaws)
 library(xtable)
 
-cohorts.out <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data\\ready\\DNK\\cohorts"
-periods.out <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data\\ready\\DNK\\periods"
-plots.out <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\figures"
+cohorts.out <- #customize
+periods.out <- #customize
+plots.out <- #customize
 
 
 countryname <- "DNK"
@@ -79,20 +79,17 @@ for(i in 2:length(cohorts)){
 ##period
 Dxp <- Dx%>%
   select(Year,Age,Cohort,Female) %>%
-#  filter(Year>1870, as.numeric(Age)<=86) %>%
   group_by(Age,Year) %>%
   summarise(Dx=sum(Female))
 
 mxp <- Ex %>%
   select(Year,Age,Cohort,Female) %>%
-#  filter(Year>1870, as.numeric(Age)<=86) %>%
   group_by(Age,Year) %>%
   summarise(Nx=sum(Female)) %>%
   left_join(Dxp) %>%
   mutate(mx=Dx/Nx)
 
 ltcp <- mxp %>%
-  #filter(Year<2001) %>%
   arrange(as.numeric(Age))%>%
   group_by(Year) %>%
   group_map(~(LifeTable(x=as.numeric(.x$Age),mx=as.numeric(.x$mx)))$lt) 
@@ -130,7 +127,7 @@ mycoeff <- allcoh %>%
          lx.coh=lx) %>%
   left_join(allper, by=c("x","year")) %>%
   mutate(ourcoeff=lx.y/lx.coh) 
-####
+
 check <- tapply(X=mycoeff$ourcoeff, INDEX=list(age=mycoeff$x, year=mycoeff$year), FUN=sum)
 ###plot
 check2 <- as_tibble(check) %>%
@@ -257,13 +254,11 @@ for(i in 2:length(cohorts)){
 ##period
 Dxp <- Dx%>%
   select(Year,Age,Cohort,Male) %>%
-  #  filter(Year>1870, as.numeric(Age)<=86) %>%
   group_by(Age,Year) %>%
   summarise(Dx=sum(Male))
 
 mxp <- Ex %>%
   select(Year,Age,Cohort,Male) %>%
-  #  filter(Year>1870, as.numeric(Age)<=86) %>%
   group_by(Age,Year) %>%
   summarise(Nx=sum(Male)) %>%
   left_join(Dxp) %>%

@@ -10,10 +10,10 @@ library(forcats)
 library(directlabels)
 library(svglite)
 
-data.dir <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data"
-data.out <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data\\ready"
-pop.dir <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data"
-figures.dir <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\figures"
+data.dir <- #customize
+data.out <- #customize
+pop.dir <- #customize
+figures.dir <- #customize
 
 ###read-in population
 setwd(pop.dir)
