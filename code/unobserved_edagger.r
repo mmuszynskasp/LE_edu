@@ -110,9 +110,7 @@ newdatam <- check2 %>%
 
 years <- unique(newdatam$year)
 
-
-
-edaggerdata <- newdata %>%
+edaggerdata <- newdatam %>%
   mutate(new_mx_06=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=1/0.6),
          new_mx_2=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=1/2),
          new_mx_4=new_mx(age=age,mx=mx,rel_surv=rel_surv,sigma=1/4),
