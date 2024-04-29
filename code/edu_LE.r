@@ -10,9 +10,10 @@ library(forcats)
 library(directlabels)
 library(svglite)
 
+
 data.dir <- #customize
-data.out <- #customize
-pop.dir <- #customize
+data.out <-  #customize
+pop.dir <-  #customize
 figures.dir <- #customize
 
 ###read-in population
@@ -214,61 +215,8 @@ LEperc <- LEall %>%
   distinct(diff_total, .keep_all= TRUE) %>%
  filter(age<90)   #at 90 some problem with data probably
 
-plot1 <- ggarrange(ggplot(data=LEperc,aes(x=age, y=diff_total, group=Type))  + 
-            geom_line(aes(linetype=Type, col=Type), size=0.7)+
-            scale_linetype_manual(values=c(2,1,2,1))+
-            scale_color_manual(values=c(rep("black",2),rep("red",2)))+
-            theme_minimal() +
-            theme(axis.title = element_text(size = 14),
-                    axis.text = element_text(size = 12),
-                    strip.text = element_text(size = 14),
-                    strip.text.y = element_text(angle=0))+
-            theme(legend.position="none")+
-            scale_x_continuous(name="Age",limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+ 
-            scale_y_continuous(name="Years")+
-            geom_hline(yintercept=0, lty=2, col="grey")+
-            ggtitle("Absolute Gap"),
-      
-          ggplot(data=LEperc,aes(x=age, y=diff_perc, group=Type))  + 
-            geom_line(aes(linetype=Type, col=Type), size=0.7)+
-            scale_linetype_manual(values=c(2,1,2,1))+
-            scale_color_manual(values=c(rep("black",2),rep("red",2)))+
-            theme_minimal() +
-            theme(legend.position="none")+
-            scale_x_continuous(name="Age",limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+ 
-            scale_y_continuous(name="Percent")+
-            theme(axis.title = element_text(size = 14),
-                  axis.text = element_text(size = 12),
-                  strip.text = element_text(size = 14),
-                  strip.text.y = element_text(angle=0))+
-            ggtitle("Relative Gap"),
-          nrow=1,ncol=2)
-setwd(figures.dir)
-ggsave(plot1, file="diffDen.pdf", width = 7, height = 3.5)
 
 
-LEdenplot <- LEall %>%
-  filter(age<90) %>%  #at 90 some problem with data probably
-  mutate(Type=recode(Type,"Total"="LE","LE_new"="LEsec","LE_High"="High","LE_Low"="Low", "LE_Medium"="Medium"),
-         Type = fct_relevel(Type,c("High","Medium","Low","LE","LEsec")),
-         sex = if_else(sex == "m","Males","Females")) %>%
-  ggplot(aes(x=age, y=LEage, group=Type))  + 
-       geom_line(aes(linetype=Type, col=Type), size=0.7)+
-       scale_linetype_manual(values=c(1,1,1,1,2))+
-       scale_color_manual(values=c("#0F8B8D","#EC9A29","#A8201A", "black","black"))+
-       facet_grid(vars(period),vars(sex))+
-       theme_minimal() +
-       scale_x_continuous(name="Age",limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+ 
-       scale_y_continuous(name="Average Age at Death")+
-       theme(legend.position="none")+
-       theme(axis.title = element_text(size = 14),
-       axis.text = element_text(size = 12),
-       strip.text = element_text(size = 14),
-       strip.text.y = element_text(angle=0))
-
-ggsave(plot=LEdenplot, filename="LEden3.pdf",  width = 7.4, height = 7)
-
-            
 
 ################ plot with the distribution of population by age and educational attainment, normal and according to current conditions
 shareplot <- popshare %>%
@@ -324,7 +272,48 @@ yearchange <- LEall2 %>%
   filter(edu=="High") %>%
   mutate(partsrel=100*decopart/LE_new_91,
          type2=paste(Component,sex, sep=",")) %>%
-  mutate(sex=ifelse(sex=="f", "Females", "Males"))
+  mutate(sex=ifelse(sex=="f", "Females", "Males")) %>%
+  select(sex,age,Component,decopart,partsrel)
+
+
+changeplot1 <- yearchange %>%
+  filter(age<90) %>%
+  ggplot(aes(x=age, y=decopart, color=Component)) +
+  geom_line()+
+  scale_color_manual(values=c("red","blue","black")) +
+  theme_minimal() +
+  theme(legend.position="none")+
+  scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
+  scale_y_continuous(name="Years", limits=c(0,5.5), breaks=c(seq(from=0, to=5, by=1)), labels=c(seq(from=0, to=5, by=1)))+  
+  theme(axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        strip.text = element_text(size = 14),
+        strip.text.y = element_text(angle=0))+
+  facet_grid(~sex)
+ggsave(changeplot1, file="changey1.pdf",width = 7, height = 3.5)    
+
+
+
+changeplot2 <- yearchange %>% 
+  filter(age<90) %>%
+  ggplot(aes(x=age, y=partsrel, color=Component))  + 
+  geom_line()+
+  scale_color_manual(values=c("red","blue","black")) +
+  theme_minimal() +
+  theme(axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        strip.text = element_text(size = 14),
+        strip.text.y = element_text(angle=0))+
+  theme(legend.position="none")+
+  labs(x = "Age") +
+  scale_y_continuous(name="Percent", limits=c(0,36), breaks=c(seq(from=0, to=35, by=5)), labels=c(seq(from=0, to=35, by=5)))+
+  facet_grid(~sex)
+
+ggsave(changeplot2, file="changey2.pdf", width = 7, height = 3.5)
+
+
+
+#####decompose gap between sexes
 
 sexdiff <- LEall2 %>%
   filter(sex=="f") %>%
@@ -344,7 +333,9 @@ sexdiff <- LEall2 %>%
   pivot_longer(c(Total,Composition,LE), names_to="Component", values_to="decopart") %>%
   filter(edu=="High") %>%
   mutate(partsrel=100*decopart/LE_new_m,
-         type2=paste(Component,year, sep=","))
+         type2=paste(Component,year, sep=",")) %>%
+  select(year,age,Component,decopart, partsrel)
+
 
 
 sexplot1 <- ggarrange(
@@ -355,7 +346,7 @@ sexplot1 <- ggarrange(
     theme_minimal() +
     theme(legend.position="none")+
     labs(x = "Age") +
-    scale_y_continuous(name="Years", limits=c(-0.1,5), breaks=c(seq(from=0, to=5, by=1)), labels=c(seq(from=0, to=5, by=1)))+ 
+    scale_y_continuous(name="Years")+ 
     scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
     theme(axis.title = element_text(size = 14),
           axis.text = element_text(size = 12),
@@ -368,7 +359,7 @@ sexplot1 <- ggarrange(
      theme_minimal() +
      theme(legend.position="none")+
      labs(x = "Age") +
-     scale_y_continuous(name="Years", limits=c(-0.1,5), breaks=c(seq(from=0, to=5, by=1)), labels=c(seq(from=0, to=5, by=1)))+  
+     scale_y_continuous(name="Years")+  
      scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
      theme(axis.title = element_text(size = 14),
            axis.text = element_text(size = 12),
@@ -386,7 +377,7 @@ sexplot2 <- ggarrange(
      theme_minimal() +
      theme(legend.position="none")+
      labs(x = "Age") +
-     scale_y_continuous(name="Percent", limits=c(-0.1,35), breaks=c(seq(from=0, to=30, by=10)), labels=c(seq(from=0, to=30, by=10)))+   
+     scale_y_continuous(name="Percent", limits=c(-1,35), breaks=c(seq(from=0, to=30, by=10)), labels=c(seq(from=0, to=30, by=10)))+   
      scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
      theme(axis.title = element_text(size = 14),
            axis.text = element_text(size = 12),
@@ -400,7 +391,7 @@ sexplot2 <- ggarrange(
      theme_minimal() +
      theme(legend.position="none")+
      labs(x = "Age") +
-     scale_y_continuous(name="Percent", limits=c(-0.1,35), breaks=c(seq(from=0, to=30, by=10)), labels=c(seq(from=0, to=30, by=10)))+
+     scale_y_continuous(name="Percent", limits=c(-1,35), breaks=c(seq(from=0, to=30, by=10)), labels=c(seq(from=0, to=30, by=10)))+
      scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
      theme(axis.title = element_text(size = 14),
            axis.text = element_text(size = 12),
@@ -410,72 +401,6 @@ sexplot2 <- ggarrange(
 ggsave(sexplot2, file="sexdiff2.pdf", width = 7, height = 3.5)
 
 
-changeplot1 <- yearchange %>%
-  filter(age<90) %>%
-  ggplot(aes(x=age, y=decopart, color=Component)) +
-      geom_line()+
-      scale_color_manual(values=c("red","blue","black")) +
-      theme_minimal() +
-      theme(legend.position="none")+
-      scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
-      scale_y_continuous(name="Years", limits=c(0,5.5), breaks=c(seq(from=0, to=5, by=1)), labels=c(seq(from=0, to=5, by=1)))+  
-      theme(axis.title = element_text(size = 14),
-            axis.text = element_text(size = 12),
-            strip.text = element_text(size = 14),
-            strip.text.y = element_text(angle=0))+
-  facet_grid(~sex)
-ggsave(changeplot1, file="changey1.pdf",width = 7, height = 3.5)    
-  
-
-
-changeplot2 <- yearchange %>% 
-  filter(age<90) %>%
-  ggplot(aes(x=age, y=partsrel, color=Component))  + 
-          geom_line()+
-          scale_color_manual(values=c("red","blue","black")) +
-          theme_minimal() +
-          theme(axis.title = element_text(size = 14),
-          axis.text = element_text(size = 12),
-          strip.text = element_text(size = 14),
-          strip.text.y = element_text(angle=0))+
-          theme(legend.position="none")+
-          labs(x = "Age") +
-          scale_y_continuous(name="Percent", limits=c(0,36), breaks=c(seq(from=0, to=35, by=5)), labels=c(seq(from=0, to=35, by=5)))+
-  facet_grid(~sex)
-                  
-ggsave(changeplot2, file="changey2.pdf", width = 7, height = 3.5)
-
-
-  
-
-changeplot2 <- ggarrange(ggplot(data=yearchange %>% filter(Component=="Total"),aes(x=age, y=partsrel, group=sex))  + 
-      geom_line(aes(linetype=sex), size=0.7)+
-      scale_linetype_manual(values=c(1,2))+
-      scale_color_manual(values=c("black","black"))+
-      theme_minimal() +
-      theme(axis.title = element_text(size = 14),
-            axis.text = element_text(size = 12),
-            strip.text = element_text(size = 14),
-            strip.text.y = element_text(angle=0))+
-      theme(legend.position="none")+
-      labs(x = "Age") +
-      scale_y_continuous(name="Percent", limits=c(-1,36), breaks=c(seq(from=0, to=35, by=5)), labels=c(seq(from=0, to=35, by=5)))+  
-      ggtitle("Total"),
-    
-    ggplot(data=yearchange %>% filter(Component!="Total"),aes(x=age, y=partsrel, group=type2))  + 
-      geom_line(aes(col=Component, linetype=sex), size=0.7)+
-      scale_linetype_manual(values=c(1,2,1,2))+
-      scale_color_manual(values=c("red","blue", "red","blue"))+
-      theme_minimal() +
-      theme(axis.title = element_text(size = 14),
-            axis.text = element_text(size = 12),
-            strip.text = element_text(size = 14),
-            strip.text.y = element_text(angle=0))+
-      theme(legend.position="none")+
-      labs(x = "Age") +
-      scale_y_continuous(name="Percent", limits=c(-1,36), breaks=c(seq(from=0, to=35, by=5)), labels=c(seq(from=0, to=35, by=5)))+  
-      ggtitle("Elements"), nrow=1,ncol=2)
-ggsave(changeplot2, file="changey2.pdf", width = 7, height = 3.5)
 
   
 
