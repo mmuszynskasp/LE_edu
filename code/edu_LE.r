@@ -11,17 +11,12 @@ library(directlabels)
 library(svglite)
 
 
-# data.dir <- #customize
-# data.out <-  #customize
-# pop.dir <-  #customize
-# figures.dir <- #customize
+data.dir <- #customize
+data.out <-  #customize
+pop.dir <-  #customize
+figures.dir <- #customize
 
   
-  data.dir <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data"
-data.out <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data\\ready"
-pop.dir <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data"
-figures.dir <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\figures"
-
 ###read-in population
 setwd(pop.dir)
 #2011-2015
@@ -109,8 +104,8 @@ years1 <- c(1991,2011)
 years2 <- c(1995,2015)
 
 #read-in data
-DxHMD <- readHMDweb(CNTRY=countryname, item="Deaths_5x1", username="mmuszynska@gmail.com", password = "123Mucha123!")   #provide your username and password
-NxHMD <- readHMDweb(CNTRY=countryname, item="Exposures_5x1", username="mmuszynska@gmail.com", password = "123Mucha123!") #provide your username and password
+DxHMD <- readHMDweb(CNTRY=countryname, item="Deaths_5x1", username="", password = "")   #provide your username and password
+NxHMD <- readHMDweb(CNTRY=countryname, item="Exposures_5x1", username="", password = "") #provide your username and password
 
 DNKall <- DxHMD %>%
   dplyr::select(Year,Age,Female,Male) %>%
@@ -124,8 +119,8 @@ DNKall <- DxHMD %>%
 
 
 ##### ax from 5x5 lt for 1985-94 and 2010-2014
-axfem <- readHMDweb(CNTRY=countryname, item="fltper_5x5", username="mmuszynska@gmail.com", password = "123Mucha123!") #provide your username and password
-axmale <- readHMDweb(CNTRY=countryname, item="mltper_5x5", username="mmuszynska@gmail.com", password = "123Mucha123!") #provide your username and password
+axfem <- readHMDweb(CNTRY=countryname, item="fltper_5x5", username="", password = "") #provide your username and password
+axmale <- readHMDweb(CNTRY=countryname, item="mltper_5x5", username="", password = "") #provide your username and password
 
 
 DNKax <- axfem %>%
