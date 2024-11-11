@@ -11,10 +11,16 @@ library(directlabels)
 library(svglite)
 
 
-data.dir <- #customize
-data.out <-  #customize
-pop.dir <-  #customize
-figures.dir <- #customize
+# data.dir <- #customize
+# data.out <-  #customize
+# pop.dir <-  #customize
+# figures.dir <- #customize
+
+  
+  data.dir <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data"
+data.out <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data\\ready"
+pop.dir <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\education\\code\\LE_edu\\LE_edu\\data"
+figures.dir <- "C:\\Users\\mmusz\\Dropbox\\DR_Vaupel\\education\\figures"
 
 ###read-in population
 setwd(pop.dir)
@@ -103,8 +109,8 @@ years1 <- c(1991,2011)
 years2 <- c(1995,2015)
 
 #read-in data
-DxHMD <- readHMDweb(CNTRY=countryname, item="Deaths_5x1")   #provide your username and password
-NxHMD <- readHMDweb(CNTRY=countryname, item="Exposures_5x1") #provide your username and password
+DxHMD <- readHMDweb(CNTRY=countryname, item="Deaths_5x1", username="mmuszynska@gmail.com", password = "123Mucha123!")   #provide your username and password
+NxHMD <- readHMDweb(CNTRY=countryname, item="Exposures_5x1", username="mmuszynska@gmail.com", password = "123Mucha123!") #provide your username and password
 
 DNKall <- DxHMD %>%
   dplyr::select(Year,Age,Female,Male) %>%
@@ -118,8 +124,8 @@ DNKall <- DxHMD %>%
 
 
 ##### ax from 5x5 lt for 1985-94 and 2010-2014
-axfem <- readHMDweb(CNTRY=countryname, item="fltper_5x5") #provide your username and password
-axmale <- readHMDweb(CNTRY=countryname, item="mltper_5x5") #provide your username and password
+axfem <- readHMDweb(CNTRY=countryname, item="fltper_5x5", username="mmuszynska@gmail.com", password = "123Mucha123!") #provide your username and password
+axmale <- readHMDweb(CNTRY=countryname, item="mltper_5x5", username="mmuszynska@gmail.com", password = "123Mucha123!") #provide your username and password
 
 
 DNKax <- axfem %>%
@@ -199,7 +205,7 @@ LEall <- DNKex %>%
   filter(!is.na(LE))%>% 
   distinct() 
 
-########################################################plot as percentage of remaining e(x) for total (LE_total==1)
+########################################################plot absolute and relative diff as percentage of remaining e(x) for total (LE_total==1)
 LEperc <- LEall %>%
   left_join(LEall %>% filter(Type=="Total") %>%
               mutate(total=LE) %>%
@@ -209,12 +215,47 @@ LEperc <- LEall %>%
   mutate(diff_total=(LE-total)) %>%
   mutate(diff_perc=100*diff_total/total) %>%
   filter(Type=="LE_new") %>%
-  mutate(sex=recode(sex,"f"="Female","m"="Male"),
-         year=period,
-         Type=paste(sex,year,sep=",")) %>%
+  mutate(Sex=recode(sex,"f"="Women","m"="Men"),
+         Sex=factor(Sex, levels = c("Women", "Men")),
+         Year=period,
+         Type=paste(sex,Year,sep=",")) %>%
   distinct(diff_total, .keep_all= TRUE) %>%
  filter(age<90)   #at 90 some problem with data probably
 
+Leplot <- ggarrange(LEperc %>%
+  filter(age<90) %>%
+  mutate(Sex=factor(Sex, levels = c("Women", "Men"))) %>%
+  ggplot(aes(x=age, y=diff_total, color=Sex, linetype =Year)) +
+  geom_line()+
+  scale_color_manual(values=c("red","black")) +
+  theme_minimal() +
+  theme(legend.position="none")+
+  scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
+  scale_y_continuous(name="Years")+  
+  theme(axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        strip.text = element_text(size = 14),
+        strip.text.y = element_text(angle=0))+
+    labs(title = "(a) Absolute Difference"),
+  LEperc %>%
+    filter(age<90) %>%
+    mutate(Sex=factor(Sex, levels = c("Women", "Men"))) %>%
+    ggplot(aes(x=age, y=diff_perc, color=Sex, linetype =Year)) +
+    geom_line()+
+    scale_color_manual(values=c("red","black")) +
+    theme_minimal() +
+    theme(legend.position="none")+
+    scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
+    scale_y_continuous(name="Percent")+  
+    theme(axis.title = element_text(size = 14),
+          axis.text = element_text(size = 12),
+          strip.text = element_text(size = 14),
+          strip.text.y = element_text(angle=0))+
+    labs(title = "(b) Relative to Lífe Expectancy"),
+  nrow=1, ncol=2, common.legend=TRUE, legend="bottom")
+
+setwd(figures.dir)
+ggsave(Leplot, file="plotLE.pdf",width = 8, height = 4)    
 
 
 
@@ -225,24 +266,27 @@ shareplot <- popshare %>%
          Observed=share) %>%
   left_join(byedu%>%
               select(period,sex,edu,age,sharenew)) %>%
-  mutate(sex=ifelse(sex=="f", "Female", "Male"),
+  mutate(sex=ifelse(sex=="f", "Women", "Men"),
          Current=sharenew) %>%
   pivot_longer(c(Observed,Current), names_to="Type", values_to="prevb") %>%
   mutate(variant=Type,
          Type=paste(Type,edu,sep="_")) %>%
+   mutate(sex=factor(sex, levels = c("Women", "Men"))) %>%
   ggplot(aes(x=age, y=prevb, group=Type, color = edu, linetype = variant)) +
   geom_line(size = 0.7)+
   facet_grid(period~sex) +
-  scale_color_manual(values=c("#0F8B8D","#A8201A","#EC9A29")) +
+  scale_color_manual(values=c("#0F8B8D","#A8201A","#EC9A29"),name = "Education") +
+  scale_linetype_manual(values = c("solid", "dashed"), name = "Type") + 
   theme_minimal() +
-  theme(legend.position="none")+
+  theme(legend.position="bottom")+
   labs(y = "Share of Population",
        x = "Age") +
   theme(axis.title = element_text(size = 14),
         axis.text = element_text(size = 12),
         strip.text = element_text(size = 14),
         strip.text.y = element_text(angle=0))
-ggsave(plot=shareplot, filename="comp30new.pdf",  width = 7.5, height = 7)
+setwd(figures.dir)
+ggsave(plot=shareplot, filename="comp30.pdf",  width = 7.5, height = 7)
 
 
 ############ decompose differences between LE_new
@@ -272,11 +316,12 @@ yearchange <- LEall2 %>%
   filter(edu=="High") %>%
   mutate(partsrel=100*decopart/LE_new_91,
          type2=paste(Component,sex, sep=",")) %>%
-  mutate(sex=ifelse(sex=="f", "Females", "Males")) %>%
+  mutate(sex=ifelse(sex=="f", "Women", "Men")) %>%
   select(sex,age,Component,decopart,partsrel)
 
 
 changeplot1 <- yearchange %>%
+  mutate(sex=factor(sex, levels = c("Women", "Men"))) %>%
   filter(age<90) %>%
   ggplot(aes(x=age, y=decopart, color=Component)) +
   geom_line()+
@@ -295,6 +340,7 @@ ggsave(changeplot1, file="changey1.pdf",width = 7, height = 3.5)
 
 
 changeplot2 <- yearchange %>% 
+  mutate(sex=factor(sex, levels = c("Women", "Men"))) %>%
   filter(age<90) %>%
   ggplot(aes(x=age, y=partsrel, color=Component))  + 
   geom_line()+
@@ -304,12 +350,12 @@ changeplot2 <- yearchange %>%
         axis.text = element_text(size = 12),
         strip.text = element_text(size = 14),
         strip.text.y = element_text(angle=0))+
-  theme(legend.position="none")+
+  theme(legend.position="bottom")+
   labs(x = "Age") +
   scale_y_continuous(name="Percent", limits=c(0,36), breaks=c(seq(from=0, to=35, by=5)), labels=c(seq(from=0, to=35, by=5)))+
   facet_grid(~sex)
 
-ggsave(changeplot2, file="changey2.pdf", width = 7, height = 3.5)
+ggsave(changeplot2, file="changey2.pdf", width = 7, height = 5)
 
 
 
@@ -365,7 +411,7 @@ sexplot1 <- ggarrange(
            axis.text = element_text(size = 12),
            strip.text = element_text(size = 14),
            strip.text.y = element_text(angle=0))+
-      ggtitle("2011-2015"),nrow=1,ncol=2)
+      ggtitle("2011-2015"),nrow=1,ncol=2, common.legend = TRUE,legend="bottom")
 ggsave(sexplot1, file="sexdiff1.pdf", width = 7, height = 3.5)
 
  
@@ -397,8 +443,8 @@ sexplot2 <- ggarrange(
            axis.text = element_text(size = 12),
            strip.text = element_text(size = 14),
            strip.text.y = element_text(angle=0))+
-     ggtitle("2011-2015"), nrow=1,ncol=2)
-ggsave(sexplot2, file="sexdiff2.pdf", width = 7, height = 3.5)
+     ggtitle("2011-2015"), nrow=1,ncol=2, common.legend = TRUE,legend="bottom")
+ggsave(sexplot2, file="sexdiff2.pdf", width = 7, height = 4)
 
 
 
