@@ -11,12 +11,15 @@ library(directlabels)
 library(svglite)
 
 
-data.dir <- #customize
-data.out <-  #customize
-pop.dir <-  #customize
-figures.dir <- #customize
 
-  
+#####insert your directories, name and pass
+data.dir <- ""
+data.out <- ""
+pop.dir <-  ""
+figures.dir <- ""
+yourusername <- ""
+yourpassword <- ""
+
 ###read-in population
 setwd(pop.dir)
 #2011-2015
@@ -104,8 +107,8 @@ years1 <- c(1991,2011)
 years2 <- c(1995,2015)
 
 #read-in data
-DxHMD <- readHMDweb(CNTRY=countryname, item="Deaths_5x1", username="", password = "")   #provide your username and password
-NxHMD <- readHMDweb(CNTRY=countryname, item="Exposures_5x1", username="", password = "") #provide your username and password
+DxHMD <- readHMDweb(CNTRY=countryname, item="Deaths_5x1", username=yourusername, password = yourpassword)   #provide your username and password
+NxHMD <- readHMDweb(CNTRY=countryname, item="Exposures_5x1", username=yourusername, password = yourpassword) #provide your username and password
 
 DNKall <- DxHMD %>%
   dplyr::select(Year,Age,Female,Male) %>%
@@ -119,8 +122,8 @@ DNKall <- DxHMD %>%
 
 
 ##### ax from 5x5 lt for 1985-94 and 2010-2014
-axfem <- readHMDweb(CNTRY=countryname, item="fltper_5x5", username="", password = "") #provide your username and password
-axmale <- readHMDweb(CNTRY=countryname, item="mltper_5x5", username="", password = "") #provide your username and password
+axfem <- readHMDweb(CNTRY=countryname, item="fltper_5x5", username=yourusername, password = yourpassword) #provide your username and password
+axmale <- readHMDweb(CNTRY=countryname, item="mltper_5x5", username=yourusername, password = yourpassword) #provide your username and password
 
 
 DNKax <- axfem %>%
@@ -226,12 +229,12 @@ Leplot <- ggarrange(LEperc %>%
   theme_minimal() +
   theme(legend.position="none")+
   scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
-  scale_y_continuous(name="Years")+  
+  scale_y_continuous(name="Years", limits=c(0,2), labels=c(seq(from=0, to=2, by=0.5)))+  
   theme(axis.title = element_text(size = 14),
         axis.text = element_text(size = 12),
         strip.text = element_text(size = 14),
         strip.text.y = element_text(angle=0))+
-    labs(title = "(a) Absolute Difference"),
+    labs(title = "(a) Absolute difference"),
   LEperc %>%
     filter(age<90) %>%
     mutate(Sex=factor(Sex, levels = c("Women", "Men"))) %>%
@@ -241,17 +244,17 @@ Leplot <- ggarrange(LEperc %>%
     theme_minimal() +
     theme(legend.position="none")+
     scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
-    scale_y_continuous(name="Percent")+  
+    scale_y_continuous(name="Percent", limits=c(0,20))+  
     theme(axis.title = element_text(size = 14),
           axis.text = element_text(size = 12),
           strip.text = element_text(size = 14),
           strip.text.y = element_text(angle=0))+
-    labs(title = "(b) Relative to Lífe Expectancy"),
+    labs(title = "(b) Relative to lífe expectancy"),
   nrow=1, ncol=2, common.legend=TRUE, legend="bottom")
 
 setwd(figures.dir)
-ggsave(Leplot, file="plotLE.pdf",width = 8, height = 4)    
-
+ggsave(Leplot, file="plotLE.pdf",width = 7, height = 3.5)    
+ggsave(filename = "plotLE.eps", dpi = 1200, width = 7, height = 3.5)
 
 
 ################ plot with the distribution of population by age and educational attainment, normal and according to current conditions
@@ -266,7 +269,8 @@ shareplot <- popshare %>%
   pivot_longer(c(Observed,Current), names_to="Type", values_to="prevb") %>%
   mutate(variant=Type,
          Type=paste(Type,edu,sep="_")) %>%
-   mutate(sex=factor(sex, levels = c("Women", "Men"))) %>%
+   mutate(sex=factor(sex, levels = c("Women", "Men")),
+          edu=factor(edu, levels=c("Low","Medium","High"))) %>%
   ggplot(aes(x=age, y=prevb, group=Type, color = edu, linetype = variant)) +
   geom_line(size = 0.7)+
   facet_grid(period~sex) +
@@ -274,14 +278,15 @@ shareplot <- popshare %>%
   scale_linetype_manual(values = c("solid", "dashed"), name = "Type") + 
   theme_minimal() +
   theme(legend.position="bottom")+
-  labs(y = "Share of Population",
-       x = "Age") +
+  scale_y_continuous(name="Share of Population", limits=c(0,0.72), breaks=seq(from=0, to=0.7, by=0.1),labels=seq(from=0, to=0.7, by=0.1))+
+  scale_x_discrete(name="Age")+
   theme(axis.title = element_text(size = 14),
         axis.text = element_text(size = 12),
         strip.text = element_text(size = 14),
         strip.text.y = element_text(angle=0))
 setwd(figures.dir)
-ggsave(plot=shareplot, filename="comp30.pdf",  width = 7.5, height = 7)
+ggsave(plot=shareplot, file="comp30.pdf",  width = 7.5, height = 7)
+ggsave(plot=shareplot,file = "comp30.eps", dpi = 1200, width = 7.5, height = 7)
 
 
 ############ decompose differences between LE_new
@@ -330,8 +335,10 @@ changeplot1 <- yearchange %>%
         strip.text = element_text(size = 14),
         strip.text.y = element_text(angle=0))+
   facet_grid(~sex)
-ggsave(changeplot1, file="changey1.pdf",width = 7, height = 3.5)    
 
+setwd(figures.dir)
+ggsave(changeplot1, file="changey1.pdf",width = 7, height =3.5)    
+ggsave(changeplot1, file = "changey1.eps", dpi = 1200, width = 7, height = 3.5)
 
 
 changeplot2 <- yearchange %>% 
@@ -347,11 +354,12 @@ changeplot2 <- yearchange %>%
         strip.text.y = element_text(angle=0))+
   theme(legend.position="bottom")+
   labs(x = "Age") +
-  scale_y_continuous(name="Percent", limits=c(0,36), breaks=c(seq(from=0, to=35, by=5)), labels=c(seq(from=0, to=35, by=5)))+
+  scale_y_continuous(name="Percent", limits=c(0,30), breaks=c(seq(from=0, to=30, by=5)), labels=c(seq(from=0, to=30, by=5)))+
   facet_grid(~sex)
 
-ggsave(changeplot2, file="changey2.pdf", width = 7, height = 5)
-
+setwd(figures.dir)
+ggsave(changeplot2, file="changey2.pdf", width = 7, height = 4.2)
+ggsave(changeplot2, file = "changey2.eps", dpi = 1200, width = 7, height = 4.2)
 
 
 #####decompose gap between sexes
@@ -379,13 +387,12 @@ sexdiff <- LEall2 %>%
 
 
 
-sexplot1 <- ggarrange(
-   ggplot(data=sexdiff %>% filter(year=="1991-1995")  , aes(x=age, y=decopart, Group = Component,  color=Component)) +
+sexplot1 <- ggplot(data=sexdiff , aes(x=age, y=decopart, Group = Component,  color=Component)) +
     geom_line(size = 0.7)+
     scale_color_manual(values=c("red","blue","black")) +
-  #  scale_linetype_manual(values=c(1,1,1))+
+    #  scale_linetype_manual(values=c(1,1,1))+
     theme_minimal() +
-    theme(legend.position="none")+
+    theme(legend.position="bottom")+
     labs(x = "Age") +
     scale_y_continuous(name="Years")+ 
     scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
@@ -393,54 +400,10 @@ sexplot1 <- ggarrange(
           axis.text = element_text(size = 12),
           strip.text = element_text(size = 14),
           strip.text.y = element_text(angle=0))+
-     ggtitle("1991-1995") ,
-   ggplot(data=sexdiff %>% filter(year=="2011-2015")  , aes(x=age, y=decopart, Group = Component,  color=Component)) +
-     geom_line(size = 0.7)+
-     scale_color_manual(values=c("red","blue","black")) +
-     theme_minimal() +
-     theme(legend.position="none")+
-     labs(x = "Age") +
-     scale_y_continuous(name="Years")+  
-     scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
-     theme(axis.title = element_text(size = 14),
-           axis.text = element_text(size = 12),
-           strip.text = element_text(size = 14),
-           strip.text.y = element_text(angle=0))+
-      ggtitle("2011-2015"),nrow=1,ncol=2, common.legend = TRUE,legend="bottom")
-ggsave(sexplot1, file="sexdiff1.pdf", width = 7, height = 3.5)
-
- 
- 
-sexplot2 <- ggarrange(
-   ggplot(data=sexdiff %>% filter(year=="1991-1995")  , aes(x=age, y=partsrel, Group = Component, color=Component)) +
-     geom_line(size = 0.7)+
-     scale_color_manual(values=c("red","blue","black")) +
-     theme_minimal() +
-     theme(legend.position="none")+
-     labs(x = "Age") +
-     scale_y_continuous(name="Percent", limits=c(-1,35), breaks=c(seq(from=0, to=30, by=10)), labels=c(seq(from=0, to=30, by=10)))+   
-     scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
-     theme(axis.title = element_text(size = 14),
-           axis.text = element_text(size = 12),
-           strip.text = element_text(size = 14),
-           strip.text.y = element_text(angle=0))+
-     ggtitle("1991-1995"),
-   
-   ggplot(data=sexdiff %>% filter(year=="2011-2015")  , aes(x=age, y=partsrel, Group = Component, color=Component)) +
-     geom_line(size = 0.7)+
-     scale_color_manual(values=c("red","blue","black")) +
-     theme_minimal() +
-     theme(legend.position="none")+
-     labs(x = "Age") +
-     scale_y_continuous(name="Percent", limits=c(-1,35), breaks=c(seq(from=0, to=30, by=10)), labels=c(seq(from=0, to=30, by=10)))+
-     scale_x_continuous(name="Age", limits=c(30,85), breaks=c(seq(from=30, to=80, by=10)), labels=c(seq(from=30, to=80, by=10)))+
-     theme(axis.title = element_text(size = 14),
-           axis.text = element_text(size = 12),
-           strip.text = element_text(size = 14),
-           strip.text.y = element_text(angle=0))+
-     ggtitle("2011-2015"), nrow=1,ncol=2, common.legend = TRUE,legend="bottom")
-ggsave(sexplot2, file="sexdiff2.pdf", width = 7, height = 4)
-
+  facet_wrap(~year)
+  
+ggsave(sexplot1, file="sexdiff1.pdf", width = 7, height = 4)
+ggsave(sexplot1, file = "sexdiff1.eps", dpi = 1200, width = 7, height = 4.2)
 
 
   
